@@ -11,6 +11,7 @@ from torch.autograd import Variable
 from PIL import Image, ImageDraw, ImageFont
 from torchvision.ops import nms
 
+
 def decodebox(regression, anchors, img):
     dtype = regression.dtype
     anchors = anchors.to(dtype)
@@ -40,7 +41,7 @@ def decodebox(regression, anchors, img):
 
     boxes[:, :, 2] = torch.clamp(boxes[:, :, 2], max=width - 1)
     boxes[:, :, 3] = torch.clamp(boxes[:, :, 3], max=height - 1)
-    
+
     # fig = plt.figure()
     # ax = fig.add_subplot(121)
     # grid_x = x_centers_a[0,-4*4*9:]
@@ -60,20 +61,20 @@ def decodebox(regression, anchors, img):
     #     ax.add_patch(rect1)
 
     # ax = fig.add_subplot(122)
-    
+
     # grid_x = x_centers_a[0,-4*4*9:]
     # grid_y = y_centers_a[0,-4*4*9:]
     # plt.scatter(grid_x.cpu(),grid_y.cpu())
     # plt.ylim(-600,1200)
     # plt.xlim(-600,1200)
     # plt.gca().invert_yaxis()
-    
+
     # y_centers = y_centers[0,-4*4*9:]
     # x_centers = x_centers[0,-4*4*9:]
 
     # pre_left = xmin[0,-4*4*9:]
     # pre_top = ymin[0,-4*4*9:]
-    
+
     # pre_w = xmax[0,-4*4*9:]-xmin[0,-4*4*9:]
     # pre_h = ymax[0,-4*4*9:]-ymin[0,-4*4*9:]
 
@@ -84,41 +85,44 @@ def decodebox(regression, anchors, img):
 
     # plt.show()
     return boxes
-    
+
+
 def letterbox_image(image, size):
     iw, ih = image.size
     w, h = size
-    scale = min(w/iw, h/ih)
-    nw = int(iw*scale)
-    nh = int(ih*scale)
+    scale = min(w / iw, h / ih)
+    nw = int(iw * scale)
+    nh = int(ih * scale)
 
-    image = image.resize((nw,nh), Image.BICUBIC)
-    new_image = Image.new('RGB', size, (128,128,128))
-    new_image.paste(image, ((w-nw)//2, (h-nh)//2))
+    image = image.resize((nw, nh), Image.BICUBIC)
+    new_image = Image.new('RGB', size, (128, 128, 128))
+    new_image.paste(image, ((w - nw) // 2, (h - nh) // 2))
     return new_image
 
+
 def efficientdet_correct_boxes(top, left, bottom, right, input_shape, image_shape):
-    new_shape = image_shape*np.min(input_shape/image_shape)
+    new_shape = image_shape * np.min(input_shape / image_shape)
 
-    offset = (input_shape-new_shape)/2./input_shape
-    scale = input_shape/new_shape
+    offset = (input_shape - new_shape) / 2. / input_shape
+    scale = input_shape / new_shape
 
-    box_yx = np.concatenate(((top+bottom)/2,(left+right)/2),axis=-1)/input_shape
-    box_hw = np.concatenate((bottom-top,right-left),axis=-1)/input_shape
+    box_yx = np.concatenate(((top + bottom) / 2, (left + right) / 2), axis=-1) / input_shape
+    box_hw = np.concatenate((bottom - top, right - left), axis=-1) / input_shape
 
     box_yx = (box_yx - offset) * scale
     box_hw *= scale
 
     box_mins = box_yx - (box_hw / 2.)
     box_maxes = box_yx + (box_hw / 2.)
-    boxes =  np.concatenate([
+    boxes = np.concatenate([
         box_mins[:, 0:1],
         box_mins[:, 1:2],
         box_maxes[:, 0:1],
         box_maxes[:, 1:2]
-    ],axis=-1)
-    boxes *= np.concatenate([image_shape, image_shape],axis=-1)
+    ], axis=-1)
+    boxes *= np.concatenate([image_shape, image_shape], axis=-1)
     return boxes
+
 
 def bbox_iou(box1, box2, x1y1x2y2=True):
     """
@@ -140,7 +144,7 @@ def bbox_iou(box1, box2, x1y1x2y2=True):
 
     inter_area = torch.clamp(inter_rect_x2 - inter_rect_x1 + 1, min=0) * \
                  torch.clamp(inter_rect_y2 - inter_rect_y1 + 1, min=0)
-                 
+
     b1_area = (b1_x2 - b1_x1 + 1) * (b1_y2 - b1_y1 + 1)
     b2_area = (b2_x2 - b2_x1 + 1) * (b2_y2 - b2_y1 + 1)
 
@@ -150,7 +154,6 @@ def bbox_iou(box1, box2, x1y1x2y2=True):
 
 
 def non_max_suppression(prediction, num_classes, conf_thres=0.5, nms_thres=0.4):
-
     output = [None for _ in range(len(prediction))]
     for image_i, image_pred in enumerate(prediction):
 
@@ -178,9 +181,9 @@ def non_max_suppression(prediction, num_classes, conf_thres=0.5, nms_thres=0.4):
             # 获得某一类初步筛选后全部的预测结果
             detections_class = detections[detections[:, -1] == c]
 
-            #------------------------------------------#
+            # ------------------------------------------#
             #   使用官方自带的非极大抑制会速度更快一些！
-            #------------------------------------------#
+            # ------------------------------------------#
             keep = nms(
                 detections_class[:, :4],
                 detections_class[:, 4],
@@ -202,7 +205,7 @@ def non_max_suppression(prediction, num_classes, conf_thres=0.5, nms_thres=0.4):
             #     detections_class = detections_class[1:][ious < nms_thres]
             # # 堆叠
             # max_detections = torch.cat(max_detections).data
-            
+
             # Add max detections to outputs
             output[image_i] = max_detections if output[image_i] is None else torch.cat(
                 (output[image_i], max_detections))

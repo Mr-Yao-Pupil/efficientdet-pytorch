@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 
+
 class Anchors(nn.Module):
     def __init__(self, anchor_scale=4., pyramid_levels=None):
         super().__init__()
@@ -31,7 +32,7 @@ class Anchors(nn.Module):
                 y = np.arange(stride / 2, image_shape[0], stride)
 
                 xv, yv = np.meshgrid(x, y)
-                
+
                 xv = xv.reshape(-1)
                 yv = yv.reshape(-1)
 

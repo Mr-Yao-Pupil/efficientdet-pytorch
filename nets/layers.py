@@ -7,9 +7,9 @@ from torch import nn
 from torch.nn import functional as F
 from torch.utils import model_zoo
 
-#--------------------------------------------------------------#
+# --------------------------------------------------------------#
 #   模型构建的辅助函数
-#--------------------------------------------------------------#
+# --------------------------------------------------------------#
 
 # 对于collections.namedtuple的使用见
 GlobalParams = collections.namedtuple('GlobalParams', [
@@ -23,6 +23,7 @@ BlockArgs = collections.namedtuple('BlockArgs', [
 
 GlobalParams.__new__.__defaults__ = (None,) * len(GlobalParams._fields)
 BlockArgs.__new__.__defaults__ = (None,) * len(BlockArgs._fields)
+
 
 def round_filters(filters, global_params):
     """ Calculate and round number of filters based on depth multiplier. """
@@ -94,9 +95,10 @@ class Identity(nn.Module):
     def forward(self, input):
         return input
 
-#--------------------------------------------------------------#
+
+# --------------------------------------------------------------#
 #   加载模型参数的辅助函数
-#--------------------------------------------------------------#
+# --------------------------------------------------------------#
 def efficientnet_params(model_name):
     """ Map EfficientNet model name to parameter coefficients. """
     params_dict = {
@@ -308,7 +310,6 @@ def load_pretrained_weights(model, model_name, load_fc=True, advprop=False):
     print('Loaded pretrained weights for {}'.format(model_name))
 
 
-
 class SwishImplementation(torch.autograd.Function):
     @staticmethod
     def forward(ctx, i):
@@ -332,6 +333,7 @@ class Swish(nn.Module):
     def forward(self, x):
         return x * torch.sigmoid(x)
 
+
 class Conv2dStaticSamePadding(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, bias=True, groups=1, dilation=1, **kwargs):
         super().__init__()
@@ -353,10 +355,10 @@ class Conv2dStaticSamePadding(nn.Module):
 
     def forward(self, x):
         h, w = x.shape[-2:]
-        
+
         extra_h = (math.ceil(w / self.stride[1]) - 1) * self.stride[1] - w + self.kernel_size[1]
         extra_v = (math.ceil(h / self.stride[0]) - 1) * self.stride[0] - h + self.kernel_size[0]
-        
+
         left = extra_h // 2
         right = extra_h - left
         top = extra_v // 2
@@ -387,7 +389,7 @@ class MaxPool2dStaticSamePadding(nn.Module):
 
     def forward(self, x):
         h, w = x.shape[-2:]
-        
+
         extra_h = (math.ceil(w / self.stride[1]) - 1) * self.stride[1] - w + self.kernel_size[1]
         extra_v = (math.ceil(h / self.stride[0]) - 1) * self.stride[0] - h + self.kernel_size[0]
 

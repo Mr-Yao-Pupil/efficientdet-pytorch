@@ -6,11 +6,12 @@ from nets.layers import MemoryEfficientSwish, Swish
 from nets.layers import Conv2dStaticSamePadding, MaxPool2dStaticSamePadding
 from utils.anchors import Anchors
 
-#----------------------------------#
+
+# ----------------------------------#
 #   Xception中深度可分离卷积
 #   先3x3的深度可分离卷积
 #   再1x1的普通卷积
-#----------------------------------#
+# ----------------------------------#
 class SeparableConvBlock(nn.Module):
     def __init__(self, in_channels, out_channels=None, norm=True, activation=False, onnx_export=False):
         super(SeparableConvBlock, self).__init__()
@@ -161,24 +162,24 @@ class BiFPN(nn.Module):
 
             p5_in_1 = self.p5_down_channel(p5)
             p5_in_2 = self.p5_down_channel_2(p5)
-            
+
             p6_in = self.p5_to_p6(p5)
             p7_in = self.p6_to_p7(p6_in)
 
             # 简单的注意力机制，用于确定更关注p7_in还是p6_in
             p6_w1 = self.p6_w1_relu(self.p6_w1)
             weight = p6_w1 / (torch.sum(p6_w1, dim=0) + self.epsilon)
-            p6_td= self.conv6_up(self.swish(weight[0] * p6_in + weight[1] * self.p6_upsample(p7_in)))
+            p6_td = self.conv6_up(self.swish(weight[0] * p6_in + weight[1] * self.p6_upsample(p7_in)))
 
             # 简单的注意力机制，用于确定更关注p6_up还是p5_in
             p5_w1 = self.p5_w1_relu(self.p5_w1)
             weight = p5_w1 / (torch.sum(p5_w1, dim=0) + self.epsilon)
-            p5_td= self.conv5_up(self.swish(weight[0] * p5_in_1 + weight[1] * self.p5_upsample(p6_td)))
+            p5_td = self.conv5_up(self.swish(weight[0] * p5_in_1 + weight[1] * self.p5_upsample(p6_td)))
 
             # 简单的注意力机制，用于确定更关注p5_up还是p4_in
             p4_w1 = self.p4_w1_relu(self.p4_w1)
             weight = p4_w1 / (torch.sum(p4_w1, dim=0) + self.epsilon)
-            p4_td= self.conv4_up(self.swish(weight[0] * p4_in_1 + weight[1] * self.p4_upsample(p5_td)))
+            p4_td = self.conv4_up(self.swish(weight[0] * p4_in_1 + weight[1] * self.p4_upsample(p5_td)))
 
             # 简单的注意力机制，用于确定更关注p4_up还是p3_in
             p3_w1 = self.p3_w1_relu(self.p3_w1)
@@ -190,19 +191,19 @@ class BiFPN(nn.Module):
             weight = p4_w2 / (torch.sum(p4_w2, dim=0) + self.epsilon)
             # Connections for P4_0, P4_1 and P3_2 to P4_2 respectively
             p4_out = self.conv4_down(
-                self.swish(weight[0] * p4_in_2 + weight[1] * p4_td+ weight[2] * self.p4_downsample(p3_out)))
+                self.swish(weight[0] * p4_in_2 + weight[1] * p4_td + weight[2] * self.p4_downsample(p3_out)))
 
             # 简单的注意力机制，用于确定更关注p5_in_2还是p5_up还是p4_out
             p5_w2 = self.p5_w2_relu(self.p5_w2)
             weight = p5_w2 / (torch.sum(p5_w2, dim=0) + self.epsilon)
             p5_out = self.conv5_down(
-                self.swish(weight[0] * p5_in_2 + weight[1] * p5_td+ weight[2] * self.p5_downsample(p4_out)))
+                self.swish(weight[0] * p5_in_2 + weight[1] * p5_td + weight[2] * self.p5_downsample(p4_out)))
 
             # 简单的注意力机制，用于确定更关注p6_in还是p6_up还是p5_out
             p6_w2 = self.p6_w2_relu(self.p6_w2)
             weight = p6_w2 / (torch.sum(p6_w2, dim=0) + self.epsilon)
             p6_out = self.conv6_down(
-                self.swish(weight[0] * p6_in + weight[1] * p6_td+ weight[2] * self.p6_downsample(p5_out)))
+                self.swish(weight[0] * p6_in + weight[1] * p6_td + weight[2] * self.p6_downsample(p5_out)))
 
             # 简单的注意力机制，用于确定更关注p7_in还是p7_up还是p6_out
             p7_w2 = self.p7_w2_relu(self.p7_w2)
@@ -211,45 +212,44 @@ class BiFPN(nn.Module):
         else:
             p3_in, p4_in, p5_in, p6_in, p7_in = inputs
 
-        # 简单的注意力机制，用于确定更关注p7_in还是p6_in
+            # 简单的注意力机制，用于确定更关注p7_in还是p6_in
             p6_w1 = self.p6_w1_relu(self.p6_w1)
             weight = p6_w1 / (torch.sum(p6_w1, dim=0) + self.epsilon)
-            p6_td= self.conv6_up(self.swish(weight[0] * p6_in + weight[1] * self.p6_upsample(p7_in)))
+            p6_td = self.conv6_up(self.swish(weight[0] * p6_in + weight[1] * self.p6_upsample(p7_in)))
 
             # 简单的注意力机制，用于确定更关注p6_up还是p5_in
             p5_w1 = self.p5_w1_relu(self.p5_w1)
             weight = p5_w1 / (torch.sum(p5_w1, dim=0) + self.epsilon)
-            p5_td= self.conv5_up(self.swish(weight[0] * p5_in + weight[1] * self.p5_upsample(p6_td)))
+            p5_td = self.conv5_up(self.swish(weight[0] * p5_in + weight[1] * self.p5_upsample(p6_td)))
 
             # 简单的注意力机制，用于确定更关注p5_up还是p4_in
             p4_w1 = self.p4_w1_relu(self.p4_w1)
             weight = p4_w1 / (torch.sum(p4_w1, dim=0) + self.epsilon)
-            p4_td= self.conv4_up(self.swish(weight[0] * p4_in + weight[1] * self.p4_upsample(p5_td)))
+            p4_td = self.conv4_up(self.swish(weight[0] * p4_in + weight[1] * self.p4_upsample(p5_td)))
 
             # 简单的注意力机制，用于确定更关注p4_up还是p3_in
             p3_w1 = self.p3_w1_relu(self.p3_w1)
             weight = p3_w1 / (torch.sum(p3_w1, dim=0) + self.epsilon)
             p3_out = self.conv3_up(self.swish(weight[0] * p3_in + weight[1] * self.p3_upsample(p4_td)))
 
-
             # 简单的注意力机制，用于确定更关注p4_in还是p4_up还是p3_out
             p4_w2 = self.p4_w2_relu(self.p4_w2)
             weight = p4_w2 / (torch.sum(p4_w2, dim=0) + self.epsilon)
             # Connections for P4_0, P4_1 and P3_2 to P4_2 respectively
             p4_out = self.conv4_down(
-                self.swish(weight[0] * p4_in + weight[1] * p4_td+ weight[2] * self.p4_downsample(p3_out)))
+                self.swish(weight[0] * p4_in + weight[1] * p4_td + weight[2] * self.p4_downsample(p3_out)))
 
             # 简单的注意力机制，用于确定更关注p5_in还是p5_up还是p4_out
             p5_w2 = self.p5_w2_relu(self.p5_w2)
             weight = p5_w2 / (torch.sum(p5_w2, dim=0) + self.epsilon)
             p5_out = self.conv5_down(
-                self.swish(weight[0] * p5_in + weight[1] * p5_td+ weight[2] * self.p5_downsample(p4_out)))
+                self.swish(weight[0] * p5_in + weight[1] * p5_td + weight[2] * self.p5_downsample(p4_out)))
 
             # 简单的注意力机制，用于确定更关注p6_in还是p6_up还是p5_out
             p6_w2 = self.p6_w2_relu(self.p6_w2)
             weight = p6_w2 / (torch.sum(p6_w2, dim=0) + self.epsilon)
             p6_out = self.conv6_down(
-                self.swish(weight[0] * p6_in + weight[1] * p6_td+ weight[2] * self.p6_downsample(p5_out)))
+                self.swish(weight[0] * p6_in + weight[1] * p6_td + weight[2] * self.p6_downsample(p5_out)))
 
             # 简单的注意力机制，用于确定更关注p7_in还是p7_up还是p6_out
             p7_w2 = self.p7_w2_relu(self.p7_w2)
@@ -272,49 +272,46 @@ class BiFPN(nn.Module):
             p6_in = self.p5_to_p6(p5)
             p7_in = self.p6_to_p7(p6_in)
 
-            p6_td= self.conv6_up(self.swish(p6_in + self.p6_upsample(p7_in)))
+            p6_td = self.conv6_up(self.swish(p6_in + self.p6_upsample(p7_in)))
 
-            p5_td= self.conv5_up(self.swish(p5_in_1 + self.p5_upsample(p6_td)))
+            p5_td = self.conv5_up(self.swish(p5_in_1 + self.p5_upsample(p6_td)))
 
-            p4_td= self.conv4_up(self.swish(p4_in_1 + self.p4_upsample(p5_td)))
+            p4_td = self.conv4_up(self.swish(p4_in_1 + self.p4_upsample(p5_td)))
 
             p3_out = self.conv3_up(self.swish(p3_in + self.p3_upsample(p4_td)))
 
             p4_out = self.conv4_down(
-                self.swish(p4_in_2 + p4_td+ self.p4_downsample(p3_out)))
+                self.swish(p4_in_2 + p4_td + self.p4_downsample(p3_out)))
 
             p5_out = self.conv5_down(
-                self.swish(p5_in_2 + p5_td+ self.p5_downsample(p4_out)))
+                self.swish(p5_in_2 + p5_td + self.p5_downsample(p4_out)))
 
             p6_out = self.conv6_down(
-                self.swish(p6_in + p6_td+ self.p6_downsample(p5_out)))
+                self.swish(p6_in + p6_td + self.p6_downsample(p5_out)))
 
             p7_out = self.conv7_down(self.swish(p7_in + self.p7_downsample(p6_out)))
 
         else:
             p3_in, p4_in, p5_in, p6_in, p7_in = inputs
 
-            p6_td= self.conv6_up(self.swish(p6_in + self.p6_upsample(p7_in)))
+            p6_td = self.conv6_up(self.swish(p6_in + self.p6_upsample(p7_in)))
 
-            p5_td= self.conv5_up(self.swish(p5_in + self.p5_upsample(p6_td)))
+            p5_td = self.conv5_up(self.swish(p5_in + self.p5_upsample(p6_td)))
 
-            p4_td= self.conv4_up(self.swish(p4_in + self.p4_upsample(p5_td)))
+            p4_td = self.conv4_up(self.swish(p4_in + self.p4_upsample(p5_td)))
 
             p3_out = self.conv3_up(self.swish(p3_in + self.p3_upsample(p4_td)))
 
             p4_out = self.conv4_down(
-                self.swish(p4_in + p4_td+ self.p4_downsample(p3_out)))
+                self.swish(p4_in + p4_td + self.p4_downsample(p3_out)))
 
             p5_out = self.conv5_down(
-                self.swish(p5_in + p5_td+ self.p5_downsample(p4_out)))
+                self.swish(p5_in + p5_td + self.p5_downsample(p4_out)))
 
             p6_out = self.conv6_down(
-                self.swish(p6_in + p6_td+ self.p6_downsample(p5_out)))
+                self.swish(p6_in + p6_td + self.p6_downsample(p5_out)))
 
             p7_out = self.conv7_down(self.swish(p7_in + self.p7_downsample(p6_out)))
-
-
-
 
         return p3_out, p4_out, p5_out, p6_out, p7_out
 
@@ -457,7 +454,6 @@ class EfficientDetBackbone(nn.Module):
             7: [72, 200, 576],
         }
 
-
         self.bifpn = nn.Sequential(
             *[BiFPN(self.fpn_num_filters[self.phi],
                     conv_channel_coef[phi],
@@ -467,11 +463,11 @@ class EfficientDetBackbone(nn.Module):
 
         self.num_classes = num_classes
         self.regressor = BoxNet(in_channels=self.fpn_num_filters[self.phi], num_anchors=num_anchors,
-                                   num_layers=self.box_class_repeats[self.phi])
+                                num_layers=self.box_class_repeats[self.phi])
 
         self.classifier = ClassNet(in_channels=self.fpn_num_filters[self.phi], num_anchors=num_anchors,
-                                     num_classes=num_classes,
-                                     num_layers=self.box_class_repeats[self.phi])
+                                   num_classes=num_classes,
+                                   num_layers=self.box_class_repeats[self.phi])
         self.anchors = Anchors(anchor_scale=self.anchor_scale[phi])
 
         self.backbone_net = EfficientNet(self.backbone_phi[phi], load_weights)
@@ -490,6 +486,5 @@ class EfficientDetBackbone(nn.Module):
         regression = self.regressor(features)
         classification = self.classifier(features)
         anchors = self.anchors(inputs)
-    
-        return features, regression, classification, anchors
 
+        return features, regression, classification, anchors

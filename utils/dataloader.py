@@ -10,13 +10,16 @@ from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from torch.utils.data.dataset import Dataset
 from matplotlib.colors import rgb_to_hsv, hsv_to_rgb
+
+
 def preprocess_input(image):
     image /= 255
-    mean=(0.406, 0.456, 0.485)
-    std=(0.225, 0.224, 0.229)
+    mean = (0.406, 0.456, 0.485)
+    std = (0.225, 0.224, 0.229)
     image -= mean
     image /= std
     return image
+
 
 class EfficientdetDataset(Dataset):
     def __init__(self, train_lines, image_size):
@@ -68,16 +71,16 @@ class EfficientdetDataset(Dataset):
         hue = self.rand(-hue, hue)
         sat = self.rand(1, sat) if self.rand() < .5 else 1 / self.rand(1, sat)
         val = self.rand(1, val) if self.rand() < .5 else 1 / self.rand(1, val)
-        x = cv2.cvtColor(np.array(image,np.float32)/255, cv2.COLOR_RGB2HSV)
-        x[..., 0] += hue*360
-        x[..., 0][x[..., 0]>1] -= 1
-        x[..., 0][x[..., 0]<0] += 1
+        x = cv2.cvtColor(np.array(image, np.float32) / 255, cv2.COLOR_RGB2HSV)
+        x[..., 0] += hue * 360
+        x[..., 0][x[..., 0] > 1] -= 1
+        x[..., 0][x[..., 0] < 0] += 1
         x[..., 1] *= sat
         x[..., 2] *= val
-        x[x[:,:, 0]>360, 0] = 360
-        x[:, :, 1:][x[:, :, 1:]>1] = 1
-        x[x<0] = 0
-        image_data = cv2.cvtColor(x, cv2.COLOR_HSV2RGB)*255
+        x[x[:, :, 0] > 360, 0] = 360
+        x[:, :, 1:][x[:, :, 1:] > 1] = 1
+        x[x < 0] = 0
+        image_data = cv2.cvtColor(x, cv2.COLOR_HSV2RGB) * 255
 
         # 调整目标框坐标
         box_data = np.zeros((len(box), 5))
@@ -108,11 +111,11 @@ class EfficientdetDataset(Dataset):
         n = self.train_batches
         index = index % n
         img, y = self.get_random_data(lines[index], self.image_size[0:2])
-        if len(y)!=0:
-            boxes = np.array(y[:,:4],dtype=np.float32)
-            y = np.concatenate([boxes,y[:,-1:]],axis=-1)
+        if len(y) != 0:
+            boxes = np.array(y[:, :4], dtype=np.float32)
+            y = np.concatenate([boxes, y[:, -1:]], axis=-1)
         img = np.array(img, dtype=np.float32)
-        tmp_inp = np.transpose(preprocess_input(img),(2,0,1))
+        tmp_inp = np.transpose(preprocess_input(img), (2, 0, 1))
         tmp_targets = np.array(y, dtype=np.float32)
         return tmp_inp, tmp_targets
 
@@ -127,4 +130,3 @@ def efficientdet_dataset_collate(batch):
     images = np.array(images)
     bboxes = np.array(bboxes)
     return images, bboxes
-
