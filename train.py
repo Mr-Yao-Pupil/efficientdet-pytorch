@@ -136,14 +136,14 @@ if __name__ == "__main__":
     #   权值文件请看README，百度网盘下载
     # ------------------------------------------------------#
     model_path = "model_data/efficientdet-d0.pth"
-    # 加快模型训练的效率
-    print('Loading weights into state dict...')
+    # 加载与训练权重
+    print('加载与训练权重')
     model_dict = model.state_dict()
     pretrained_dict = torch.load(model_path)
     pretrained_dict = {k: v for k, v in pretrained_dict.items() if np.shape(model_dict[k]) == np.shape(v)}
     model_dict.update(pretrained_dict)
     model.load_state_dict(model_dict)
-    print('Finished!')
+    print('初始权重加载完成！')
 
     net = model.train()
 
@@ -158,6 +158,8 @@ if __name__ == "__main__":
     val_split = 0.1
     with open(annotation_path) as f:
         lines = f.readlines()
+
+    # 使用随机数种子保证再次启动训练时获得相同的训练和验证数据
     np.random.seed(10101)
     np.random.shuffle(lines)
     np.random.seed(None)

@@ -127,6 +127,7 @@ class EfficientNet(nn.Module):
 
     def __init__(self, blocks_args=None, global_params=None):
         super().__init__()
+        # 使用断言避免生成的网络子模块信息错误
         assert isinstance(blocks_args, list), 'blocks_args should be a list'
         assert len(blocks_args) > 0, 'block args must be greater than 0'
         self._global_params = global_params
@@ -226,12 +227,32 @@ class EfficientNet(nn.Module):
 
     @classmethod
     def from_name(cls, model_name, override_params=None):
+        """
+        返回一个实例化的著网络的class
+        :param model_name: 网络型号选择，从efficientnet-b{0~7}
+        :param override_params: 网络的其他参数，如分类层分类数目
+        :return: 一个实例化后的efficientnet-b{0~7}
+        """
         cls._check_model_name_is_valid(model_name)
         blocks_args, global_params = get_model_params(model_name, override_params)
+        print(len(blocks_args))
+        print(blocks_args)
+        print(len(global_params))
+        print(global_params)
+        exit()
         return cls(blocks_args, global_params)
 
     @classmethod
     def from_pretrained(cls, model_name, load_weights=True, advprop=True, num_classes=1000, in_channels=3):
+        """
+        调用该方法实例化EfficienNet的主网络部分
+        :param model_name: EfficientNe的选型
+        :param load_weights: 是否加载权重，默认加载
+        :param advprop: 预训练权重下载地址选择，默认为False，此时选择url_map_advprop，为True时选择url_map
+        :param num_classes: 分类层分类数目
+        :param in_channels:
+        :return:
+        """
         model = cls.from_name(model_name, override_params={'num_classes': num_classes})
         if load_weights:
             load_pretrained_weights(model, model_name, load_fc=(num_classes == 1000), advprop=advprop)

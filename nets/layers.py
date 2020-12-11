@@ -70,7 +70,7 @@ def get_same_padding_conv2d(image_size=None):
 
 
 class Conv2dDynamicSamePadding(nn.Conv2d):
-    """ 2D Convolutions like TensorFlow, for a dynamic image size """
+    """定义一个类似于TensorFlow2中Conv2d的卷积类"""
 
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, dilation=1, groups=1, bias=True):
         super().__init__(in_channels, out_channels, kernel_size, stride, 0, dilation, groups, bias)
@@ -100,7 +100,12 @@ class Identity(nn.Module):
 #   加载模型参数的辅助函数
 # --------------------------------------------------------------#
 def efficientnet_params(model_name):
-    """ Map EfficientNet model name to parameter coefficients. """
+    """
+    获取网络的形状变化信息
+
+    :param model_name: 网络型号选择，从efficientnet-b{0~7}
+    :return: 长度为4的网络参数信息，从左至右为网络的宽度变化比例，网络深度变化比例，输入图片的长宽信息，Dropout的参数失活比例
+    """
     params_dict = {
         # Coefficients:   width,depth,res,dropout
         'efficientnet-b0': (1.0, 1.0, 224, 0.2),
@@ -255,7 +260,13 @@ def efficientnet(width_coefficient=None, depth_coefficient=None, dropout_rate=0.
 
 
 def get_model_params(model_name, override_params):
-    """ Get the block args and global params for a given model """
+    """
+    获取网络的模块信息和全局参数
+
+    :param model_name:  网络型号选择，从efficientnet-b{0~7}
+    :param override_params: 网络的其他参数，如分类层分类数目
+    :return: 网络的内部子模块信息参数和网络全局参数，数据类型为collections.namedtuple
+    """
     if model_name.startswith('efficientnet'):
         w, d, s, p = efficientnet_params(model_name)
         # note: all models have drop connect rate = 0.2
@@ -294,8 +305,16 @@ url_map_advprop = {
 
 
 def load_pretrained_weights(model, model_name, load_fc=True, advprop=False):
-    """ Loads pretrained weights, and downloads if loading for the first time. """
+    """
+    用于加载与训练权重，如果是第一次加载与训练权重会下载
+
+    :param model: 实例化后的网络
+    :param model_name: 实例化是网络的型号，从 efficientnet-b{0~7}
+    :param load_fc: 是否加载分类曾权重，默认加载
+    :param advprop: 预训练权重下载地址选择，默认为False，此时选择url_map_advprop，为True时选择url_map
+    """
     # AutoAugment or Advprop (different preprocessing)
+    # 预备训练权重的下载地址选择
     url_map_ = url_map_advprop if advprop else url_map
     state_dict = model_zoo.load_url(url_map_[model_name], map_location=torch.device('cpu'))
     # state_dict = torch.load('../../weights/backbone_efficientnetb0.pth')
@@ -303,11 +322,12 @@ def load_pretrained_weights(model, model_name, load_fc=True, advprop=False):
         ret = model.load_state_dict(state_dict, strict=False)
         print(ret)
     else:
+        # 不加载全连接层则将权重弹出后加载主网络权重，若pop失败则出发断言机制
         state_dict.pop('_fc.weight')
         state_dict.pop('_fc.bias')
         res = model.load_state_dict(state_dict, strict=False)
         assert set(res.missing_keys) == set(['_fc.weight', '_fc.bias']), 'issue loading pretrained weights'
-    print('Loaded pretrained weights for {}'.format(model_name))
+    print('{}预训练权重加载完成'.format(model_name))
 
 
 class SwishImplementation(torch.autograd.Function):
@@ -356,6 +376,7 @@ class Conv2dStaticSamePadding(nn.Module):
     def forward(self, x):
         h, w = x.shape[-2:]
 
+        # math.ceil=====>向上取整
         extra_h = (math.ceil(w / self.stride[1]) - 1) * self.stride[1] - w + self.kernel_size[1]
         extra_v = (math.ceil(h / self.stride[0]) - 1) * self.stride[0] - h + self.kernel_size[0]
 

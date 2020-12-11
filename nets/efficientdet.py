@@ -396,6 +396,12 @@ class ClassNet(nn.Module):
 
 class EfficientNet(nn.Module):
     def __init__(self, phi, load_weights=False):
+        """
+        EfficientNet的网络主干部分
+
+        :param phi: 网络选型b0~b7
+        :param load_weights: 是否加载权重，默认False不加载
+        """
         super(EfficientNet, self).__init__()
         model = EffNet.from_pretrained(f'efficientnet-b{phi}', load_weights)
         del model._conv_head
@@ -479,6 +485,7 @@ class EfficientDetBackbone(nn.Module):
 
     def forward(self, inputs):
         _, p3, p4, p5 = self.backbone_net(inputs)
+        exit()
 
         features = (p3, p4, p5)
         features = self.bifpn(features)
@@ -488,3 +495,8 @@ class EfficientDetBackbone(nn.Module):
         anchors = self.anchors(inputs)
 
         return features, regression, classification, anchors
+
+if __name__ == '__main__':
+    from torchsummary import summary
+    net = EfficientDetBackbone(num_classes=80, phi=0, load_weights=False).cuda()
+    summary(net, input_size=(3, 224, 224))
