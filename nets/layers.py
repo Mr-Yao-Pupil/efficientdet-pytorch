@@ -11,6 +11,7 @@ from torch.utils import model_zoo
 #   模型构建的辅助函数
 #--------------------------------------------------------------#
 
+# 对于collections.namedtuple的使用见
 GlobalParams = collections.namedtuple('GlobalParams', [
     'batch_norm_momentum', 'batch_norm_epsilon', 'dropout_rate',
     'num_classes', 'width_coefficient', 'depth_coefficient',
@@ -119,7 +120,29 @@ class BlockDecoder(object):
 
     @staticmethod
     def _decode_block_string(block_string):
-        """ Gets a block through a string notation of arguments. """
+        """
+        对传入的字符串进行正则化解码，对一个字符串返回一个 BlockArgs
+        :param block_string: 包含模型内模块信息的字符串，编码方式说明如下
+        :return: 解码字符串后的一个模块参数信息，其结构如下
+                BlockArgs(kernel_size=int(options['k']),
+                          num_repeat=int(options['r']),
+                          input_filters=int(options['i']),
+                          output_filters=int(options['o']),
+                          expand_ratio=int(options['e']),
+                          id_skip=('noskip' not in block_string),
+                          se_ratio=float(options['se']) if 'se' in options else None,
+                          stride=[int(options['s'][0])])
+
+            例如输入字符串为:'r1_k3_s11_e1_i32_o16_se0.25'
+            返回结果为:BlockArgs(kernel_size=3,
+                               num_repeat=1,
+                               input_filters=32,
+                               output_filters=16,
+                               expand_ratio=1,
+                               id_skip=True,
+                               se_ratio=0.25,
+                               stride=1)
+        """
         assert isinstance(block_string, str)
 
         ops = block_string.split('_')
@@ -164,10 +187,10 @@ class BlockDecoder(object):
     @staticmethod
     def decode(string_list):
         """
-        Decodes a list of string notations to specify blocks inside the network.
+        解码一个包含多个字符串的列表，返回一个包含每个字符串解码后的collections.namedtuple.
 
-        :param string_list: a list of strings, each string is a notation of block
-        :return: a list of BlockArgs namedtuples of block args
+        :param string_list: 一个包含多个字符串的列表，每个字符串包含未解码的模块生成信息
+        :return: 包含efficiennet的多个BlockArgs的列表
         """
         assert isinstance(string_list, list)
         blocks_args = []
@@ -191,7 +214,17 @@ class BlockDecoder(object):
 
 def efficientnet(width_coefficient=None, depth_coefficient=None, dropout_rate=0.2,
                  drop_connect_rate=0.2, image_size=None, num_classes=1000):
-    """ Creates a efficientnet model. """
+    """
+    返回一个efficiennet模型的参数，和模型整体细节
+
+    :param width_coefficient: 在efficiennet基础模型上的宽度变化
+    :param depth_coefficient: 在efficiennet基础模型上的深度变化
+    :param dropout_rate: 训练模型时nn.dorpout的比例参数
+    :param drop_connect_rate:
+    :param image_size: 输入efficiennet模型的图片大小
+    :param num_classes: efficiennet模型最后输出的分类数目
+    :return:
+    """
 
     blocks_args = [
         'r1_k3_s11_e1_i32_o16_se0.25', 'r2_k3_s22_e6_i16_o24_se0.25',
@@ -199,6 +232,7 @@ def efficientnet(width_coefficient=None, depth_coefficient=None, dropout_rate=0.
         'r3_k5_s11_e6_i80_o112_se0.25', 'r4_k5_s22_e6_i112_o192_se0.25',
         'r1_k3_s11_e6_i192_o320_se0.25',
     ]
+    # 将blocks_args正则化解码,通过BlockDecoder获取一个类似于字典的collections.namedtuple
     blocks_args = BlockDecoder.decode(blocks_args)
 
     global_params = GlobalParams(

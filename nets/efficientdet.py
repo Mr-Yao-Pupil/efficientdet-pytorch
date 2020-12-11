@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch
-
+from torchsummary import summary
 from nets.efficientnet import EfficientNet as EffNet
 from nets.layers import MemoryEfficientSwish, Swish
 from nets.layers import Conv2dStaticSamePadding, MaxPool2dStaticSamePadding
